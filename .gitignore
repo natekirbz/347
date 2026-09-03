@@ -1,0 +1,9 @@
+# from: https://cs-347-f26.github.io/mdn-content/en-us/docs/learn_web_development/extensions/server-side/django/development_environment/#source_code_management_with_git_and_github
+# Text backup files
+*.bak
+
+# Database
+*.sqlite3
+
+# Python virtual environment
+.venv/
