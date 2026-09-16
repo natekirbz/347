@@ -1,5 +1,5 @@
 {% extends "base_generic.html" %}
-
+{% load static %}
 {% block content %}
   <h1>Local Library Home</h1>
   <p>
@@ -14,10 +14,10 @@
     <li><strong>Copies available:</strong> {{ num_instances_available }}</li>
     <li><strong>Authors:</strong> {{ num_authors }}</li>
   </ul>
-  <p>Number of Genres: {{ num_genres }}</p>
+  <p>Number of Genres with fict: {{ num_genres }}</p>
   <p>Number of Books containing the word 'pizza': {{ num_books_with_word }}</p>
   <img src="https://w3.cs.jmu.edu/cs347/f26/stewart.jpeg" alt="Dr. Stewart rockin' that Carolina Blue koy Kahala">
-  <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/2010-kodiak-bear-1.jpg/1280px-2010-kodiak-bear-1.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail" alt="this is a bear">
+  <img src="{% static '2010-kodiak-bear-1.jpg' %}" alt="this is a bear">
 {% endblock %}
 
 {% block title %}
