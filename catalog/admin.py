@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 
-from .models import Author, Genre, Book, BookInstance, Language
+from .models import Author, Genre, Book, BookInstance, Language, BookAuthor
 
 # consider adding save_as to more easily add instance that have similar values
 # you could do this for any or all of the below, e.g.
@@ -14,11 +14,16 @@ from .models import Author, Genre, Book, BookInstance, Language
 admin.site.register(Genre)
 # admin.site.register(BookInstance)
 admin.site.register(Language)
+admin.site.register(BookAuthor)
+
 
 
 class BooksInline(admin.TabularInline):
     """Defines format of inline book insertion (used in AuthorAdmin)"""
     model = Book
+class BookAuthorInline(admin.TabularInline):
+    model = BookAuthor
+    extra = 1
 
 # Define the admin class
 @admin.register(Author)
@@ -26,7 +31,7 @@ class AuthorAdmin(admin.ModelAdmin):
     list_display = ('last_name', 'first_name', 'date_of_birth', 'date_of_death')
 
     fields = ['first_name', 'last_name', ('date_of_birth', 'date_of_death')]
-    inlines = [BooksInline]
+    inlines = [BookAuthorInline]
 
 
 # Register the Admin classes for Book using the decorator
@@ -35,10 +40,9 @@ class BooksInstanceInline(admin.TabularInline):
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'display_genre')
+    list_display = ('title', 'display_authors', 'display_genre')
 
-    inlines = [BooksInstanceInline]
-
+    inlines = [BookAuthorInline, BooksInstanceInline]
 @admin.register(BookInstance)
 class BookInstanceAdmin(admin.ModelAdmin):
     """Administration object for BookInstance models."""
@@ -53,3 +57,4 @@ class BookInstanceAdmin(admin.ModelAdmin):
             'fields': ('status', 'due_back')
         }),
     )
+

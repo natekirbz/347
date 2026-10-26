@@ -3,11 +3,13 @@
 {% block content %}
   <h1>Title: {{ book.title }}</h1>
 
-  <p><strong>Author:</strong> <a href="">{{ book.author }}</a></p>
-  <p>
-  <strong>Author:</strong>
-  <a href="{{ book.author.get_absolute_url }}">{{ book.author }}</a>
-  </p>
+  <p><strong>Author{{ book.bookauthor_set.count|pluralize }}:</strong>
+  {% for ba in book.bookauthor_set.all %}
+    <a href="{{ ba.author.get_absolute_url }}">{{ ba.author }}</a>{% if not forloop.last %}, {% endif %}
+  {% empty %}
+    Unknown
+  {% endfor %}
+</p>
   <p><strong>Summary:</strong> {{ book.summary }}</p>
   <p><strong>ISBN:</strong> {{ book.isbn }}</p>
   <p><strong>Language:</strong> {{ book.language }}</p>

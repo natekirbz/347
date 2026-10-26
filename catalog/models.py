@@ -37,7 +37,11 @@ class Genre(models.Model):
 class Book(models.Model):
     """Model representing a book (but not a specific copy of a book)."""
     title = models.CharField(max_length=200)
-    author = models.ForeignKey('Author', on_delete=models.RESTRICT, null=True)
+    authors = models.ManyToManyField(
+        'Author',
+        through='BookAuthor',
+        related_name='books',
+    )
     # Foreign Key used because book can only have one author, but authors can have multiple books.
     # Author as a string rather than object because it hasn't been declared yet in file.
 
@@ -62,6 +66,10 @@ class Book(models.Model):
         """Create a string for the Genre. This is required to display genre in Admin."""
         return ', '.join(genre.name for genre in self.genre.all()[:3])
     display_genre.short_description = 'Genre'
+
+    def display_authors(self):
+        return ', '.join(str(ba.author) for ba in self.bookauthor_set.all())
+    display_authors.short_description = 'Authors'
 
     def get_absolute_url(self):
         """Returns the URL to access a detail record for this book."""
@@ -141,4 +149,16 @@ class Language(models.Model):
                 violation_error_message = "Language already exists (case insensitive match)"
             ),
         ]
+
+class BookAuthor(models.Model):
+    """Links a Book to an Author, recording the author's position on the byline."""
+    book = models.ForeignKey('Book', on_delete=models.CASCADE)
+    author = models.ForeignKey('Author', on_delete=models.CASCADE)
+    author_order = models.IntegerField(default=1)
+
+    class Meta:
+        ordering = ['author_order']
+
+    def __str__(self):
+        return f'{self.book} – {self.author} (#{self.author_order})'
 
