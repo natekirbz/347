@@ -1,0 +1,18 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<form action="" method="post">
+  {% csrf_token %}
+  <table>
+    {{ form.as_table }}
+  </table>
+
+  <h2>Authors</h2>
+  {{ author_formset.management_form }}
+  <table>
+    {{ author_formset.as_table }}
+  </table>
+
+  <input type="submit" value="Submit">
+</form>
+{% endblock %}
