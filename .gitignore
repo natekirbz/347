@@ -227,3 +227,5 @@ staticfiles/
 .env.*
 !.env.example
 
+# User-uploaded files
+media/
