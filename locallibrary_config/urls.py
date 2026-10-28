@@ -29,6 +29,10 @@ urlpatterns += [
     path('catalog/', include('catalog.urls')),
 ]
 
+urlpatterns += [
+    path('chat/', include('chat.urls')),
+]
+
 # Add URL maps to redirect the base URL to our application
 from django.views.generic import RedirectView
 urlpatterns += [
@@ -40,3 +44,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Mount the Django Ninja API
+from .api import api
+
+urlpatterns += [
+    path('api/', api.urls),
+]
+
+# Mount the TaskFlow API from the Django Ninja Tutorial
+from taskflow.api import api as taskflow_api
+
+urlpatterns += [
+    path('taskflow/api/', taskflow_api.urls),
+]

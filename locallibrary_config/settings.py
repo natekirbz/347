@@ -25,7 +25,7 @@ env.read_env(str(BASE_DIR / ".env"))
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(pmm155sgk+x=imge_j48()1fa_c4iae*q%%e7z3@n-l!$1i52'
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -38,6 +38,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +48,10 @@ INSTALLED_APPS = [
     'catalog.apps.CatalogConfig', # This object was created for us in /catalog/apps.py
     'allauth',
     'allauth.account',
+    'chat',
+    'ninja',
+    'projects',
+    'tasks',
 ]
 
 MIDDLEWARE = [
@@ -87,6 +92,8 @@ WSGI_APPLICATION = 'locallibrary_config.wsgi.application'
 DATABASES = {
     "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    DATABASES["default"]["TEST"] = {"NAME": BASE_DIR / "test_db.sqlite3"}
 
 
 # Password validation
@@ -148,3 +155,19 @@ ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 
 LOGIN_REDIRECT_URL = '/'
+
+# Channels
+ASGI_APPLICATION = "locallibrary_config.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                {
+                    "address": env("REDIS_URL"),
+                    "socket_timeout": env.int("REDIS_SOCKET_TIMEOUT"),
+                }
+            ],
+        },
+    },
+}
