@@ -58,7 +58,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 
 
 class LoanedBooksByUserListView(LoginRequiredMixin, generic.ListView):
-    """Lists books on loan to the current user, soonest due first."""
     model = BookInstance
     template_name = 'catalog/bookinstance_list_borrowed_user.html'
     paginate_by = 10
@@ -71,7 +70,6 @@ class LoanedBooksByUserListView(LoginRequiredMixin, generic.ListView):
 
 
 class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
-    """Lists all books on loan. Only for users with can_mark_returned."""
     model = BookInstance
     permission_required = 'catalog.can_mark_returned'
     template_name = 'catalog/bookinstance_list_borrowed_all.html'
@@ -81,12 +79,10 @@ class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
         return BookInstance.objects.filter(status__exact='o').order_by('due_back')
 
 
-# ---- Part 9: forms ----
-
 import datetime
 
 from django.contrib.auth.decorators import login_required, permission_required
-from django.forms import inlineformset_factory
+from django.forms import ModelForm, inlineformset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
@@ -99,21 +95,16 @@ from .models import BookAuthor
 @login_required
 @permission_required('catalog.can_mark_returned', raise_exception=True)
 def renew_book_librarian(request, pk):
-    """View function for renewing a specific BookInstance by librarian."""
     book_instance = get_object_or_404(BookInstance, pk=pk)
 
-    # If this is a POST request then process the Form data
     if request.method == 'POST':
-        # Create a form instance and populate it with data from the request (binding):
         form = RenewBookForm(request.POST)
 
-        # Check if the form is valid:
         if form.is_valid():
             book_instance.due_back = form.cleaned_data['renewal_date']
             book_instance.save()
             return HttpResponseRedirect(reverse('all-borrowed'))
 
-    # If this is a GET (or any other method) create the default form.
     else:
         proposed_renewal_date = datetime.date.today() + datetime.timedelta(weeks=3)
         form = RenewBookForm(initial={'renewal_date': proposed_renewal_date})
@@ -144,8 +135,6 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
     permission_required = 'catalog.delete_author'
 
     def form_valid(self, form):
-        # BookAuthor uses CASCADE, so refuse here rather than silently
-        # removing the author from their books.
         if self.object.books.exists():
             return HttpResponseRedirect(reverse('author-delete', kwargs={'pk': self.object.pk}))
         try:
@@ -155,26 +144,43 @@ class AuthorDelete(PermissionRequiredMixin, DeleteView):
             return HttpResponseRedirect(reverse('author-delete', kwargs={'pk': self.object.pk}))
 
 
-# ---- Challenge: Book create / update / delete ----
+class BookAuthorForm(ModelForm):
+    class Meta:
+        model = BookAuthor
+        fields = ['author', 'author_order']
+
+    def has_changed(self):
+        if not self.data.get(self.add_prefix('author')) and not self.instance.pk:
+            return False
+        return super().has_changed()
+
 
 BookAuthorFormSet = inlineformset_factory(
-    Book, BookAuthor, fields=['author', 'author_order'], extra=2)
+    Book, BookAuthor, form=BookAuthorForm, extra=2)
 
 
 class BookAuthorFormSetMixin:
-    """Adds an inline formset of BookAuthor rows to a Book create/update view."""
+    def get_formset(self, instance):
+        if self.request.method == 'POST' and self._has_formset_data():
+            return BookAuthorFormSet(self.request.POST, instance=instance)
+        return BookAuthorFormSet(instance=instance)
+
+    def _has_formset_data(self):
+        return f'{BookAuthorFormSet.get_default_prefix()}-TOTAL_FORMS' in self.request.POST
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.method == 'POST':
-            context['author_formset'] = BookAuthorFormSet(self.request.POST, instance=self.object)
-        else:
-            context['author_formset'] = BookAuthorFormSet(instance=self.object)
+        context.setdefault('author_formset', self.get_formset(self.object))
         return context
 
     def form_valid(self, form):
+        if not self._has_formset_data():
+            self.object = form.save()
+            return HttpResponseRedirect(self.get_success_url())
         author_formset = BookAuthorFormSet(self.request.POST, instance=form.instance)
         if not author_formset.is_valid():
-            return self.form_invalid(form)
+            return self.render_to_response(
+                self.get_context_data(form=form, author_formset=author_formset))
         self.object = form.save()
         author_formset.instance = self.object
         author_formset.save()
@@ -203,5 +209,4 @@ class BookDelete(PermissionRequiredMixin, DeleteView):
             self.object.delete()
             return HttpResponseRedirect(self.success_url)
         except Exception:
-            # BookInstance.book is RESTRICT, so a book with copies can't be deleted.
             return HttpResponseRedirect(reverse('book-delete', kwargs={'pk': self.object.pk}))

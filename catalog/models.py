@@ -92,7 +92,6 @@ class BookInstance(models.Model):
 
     @property
     def is_overdue(self):
-        """True if the book has a due date in the past."""
         return bool(self.due_back and date.today() > self.due_back)
 
     LOAN_STATUS = (
