@@ -52,3 +52,30 @@ class AuthorListView(generic.ListView):
 
 class AuthorDetailView(generic.DetailView):
     model = Author
+
+
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+
+
+class LoanedBooksByUserListView(LoginRequiredMixin, generic.ListView):
+    """Lists books on loan to the current user, soonest due first."""
+    model = BookInstance
+    template_name = 'catalog/bookinstance_list_borrowed_user.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return (BookInstance.objects
+                .filter(borrower=self.request.user)
+                .filter(status__exact='o')
+                .order_by('due_back'))
+
+
+class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
+    """Lists all books on loan. Only for users with can_mark_returned."""
+    model = BookInstance
+    permission_required = 'catalog.can_mark_returned'
+    template_name = 'catalog/bookinstance_list_borrowed_all.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return BookInstance.objects.filter(status__exact='o').order_by('due_back')
